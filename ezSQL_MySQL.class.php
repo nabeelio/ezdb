@@ -54,7 +54,7 @@
 *  ezSQL Database specific class - mySQL
 */
 
-class ezSQL_mysql extends ezSQLcore
+class ezSQL_mysql extends ezSQL_Base
 {
 
 	
