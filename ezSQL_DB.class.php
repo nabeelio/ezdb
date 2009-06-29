@@ -36,7 +36,8 @@
  * @license BSD License
  * @package codon_core
  */
- 
+
+include dirname(__FILE__).'/ezSQL_Base.class.php';
 
 class DB
 {
@@ -47,6 +48,10 @@ class DB
 	public static $num_rows;
 	public static $rows_affected;
 	public static $connected = false;
+	public static $last_query;
+	
+	public static $use_exceptions = true;
+	public static $default_type = OBJECT;
 	
 	public static $table_prefix = '';
 	
@@ -82,9 +87,7 @@ class DB
 	 * @return boolean
 	 */
 	public static function init($type='mysql')
-	{
-		include dirname(__FILE__).'/ezSQL_SQL.class.php';
-		
+	{		
 		if($type == 'mysql' || $type == '')
 		{
 			include dirname(__FILE__).DIRECTORY_SEPARATOR.'ezSQL_MySQL.class.php';
@@ -176,6 +179,7 @@ class DB
 			return false;
 		}
 		
+		self::$DB->use_exceptions = self::$use_exceptions;
 		self::$connected = true;
 		return true;
 	}
@@ -189,6 +193,8 @@ class DB
 	 */
 	public static function select($dbname)
 	{
+		self::$DB->use_exceptions = self::$use_exceptions;
+		
 		$ret = self::$DB->select($dbname);
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
@@ -232,21 +238,8 @@ class DB
 	 */
 	public static function quick_select($table, $fields, $cond='', $type=OBJECT)
 	{
+		self::$DB->use_exceptions = self::$use_exceptions;
 		return self::$DB->quick_select($table, $fields, $cond, $type);
-	}
-	
-	/**
-	 * Do a "quick update"
-	 * @see http://www.nsslive.net/codon/docs/database#quick_functions
-	 *
-	 * @param string $table Table name
-	 * @param array $fields Associative array (column=>value) to update
-	 * @param unknown_type $cond Conditions to update on
-	 * @return result
-	 */
-	public static function quick_update($table, $fields, $cond='')
-	{
-		return self::$DB->quick_update($table, $fields, $cond);
 	}
 	
 	/**
@@ -258,9 +251,25 @@ class DB
 	 * @param string $flags INSERT flags (DELAYED, etc)
 	 * @return result
 	 */
-	public static function quick_insert($table, $fields, $flags= '')
+	public static function quick_insert($table, $fields, $flags= '', $allowed_cols='')
 	{
-		return self::$DB->quick_insert($table, $fields, $flags);
+		self::$DB->use_exceptions = self::$use_exceptions;
+		return self::$DB->quick_insert($table, $fields, $flags, $allowed_cols);
+	}
+	
+	/**
+	 * Do a "quick update"
+	 * @see http://www.nsslive.net/codon/docs/database#quick_functions
+	 *
+	 * @param string $table Table name
+	 * @param array $fields Associative array (column=>value) to update
+	 * @param unknown_type $cond Conditions to update on
+	 * @return result
+	 */
+	public static function quick_update($table, $fields, $cond='', $allowed_cols='')
+	{
+		self::$DB->use_exceptions = self::$use_exceptions;
+		return self::$DB->quick_update($table, $fields, $cond, $allowed_cols);
 	}
 	
 	/**
@@ -273,13 +282,17 @@ class DB
 	 * @param constant $type Return type
 	 * @return array/object
 	 */
-	public static function get_results($query, $type=OBJECT)
+	public static function get_results($query, $type='')
 	{
+		if($type == '') $type = self::$default_type;
+		
+		self::$DB->use_exceptions = self::$use_exceptions;
 		$ret = self::$DB->get_results($query, $type);
 		
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
 		self::$num_rows = self::$DB->num_rows;
+		self::$last_query = $query;
 		
 		return $ret;
 	}
@@ -292,12 +305,16 @@ class DB
 	 * @param offset $y
 	 * @return unknown
 	 */
-	public static function get_row($query, $type=OBJECT, $y=0)
+	public static function get_row($query, $type='', $y=0)
 	{
+		if($type == '') $type = self::$default_type;
+		self::$DB->use_exceptions = self::$use_exceptions;
+		
 		$ret = self::$DB->get_row($query, $type, $y);
 		
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
+		self::$last_query = $query;
 		
 		return $ret;
 	}
@@ -310,12 +327,14 @@ class DB
 	 */
 	public static function query($query)
 	{
+		self::$DB->use_exceptions = self::$use_exceptions;
 		$ret = self::$DB->query($query);
 		
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
 		self::$rows_affected = self::$num_rows = self::$DB->num_rows;
 		self::$insert_id = self::$DB->insert_id;
+		self::$last_query = $query;
 		
 		return $ret; //self::$insert_id;
 	}

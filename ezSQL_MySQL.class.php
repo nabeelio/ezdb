@@ -32,24 +32,12 @@
  *
  * @author Nabeel Shahzad
  * @copyright Copyright (c) 2008, Nabeel Shahzad
- * @link http://www.nsslive.net/codon
+ * @link http://www.nsslive.net
  * @license BSD License
- * @package codon_core
+ * 
+ * @author Originally by Justin Vincent (justin@visunet.ie)
+ * @link http://php.justinvincent.com
  */
-
-/**********************************************************************
- *  Author: Justin Vincent (justin@visunet.ie)
- *  Web...: http://php.justinvincent.com
- *  Name..: ezSQL_mysql
- *  Desc..: mySQL component (part of ezSQL databse abstraction library)
- *
- */
- 
-/**
- * Modifications by Nabeel Shahzad
- * www.nsslive.net 
- */
-
 /**********************************************************************
 *  ezSQL Database specific class - mySQL
 */
@@ -57,7 +45,6 @@
 class ezSQL_mysql extends ezSQL_Base
 {
 
-	
 	/**
 	 * Constructor, connects to database immediately, unless $dbname is blank
 	 *
@@ -120,6 +107,9 @@ class ezSQL_mysql extends ezSQL_Base
 	{
 		if(!$this->dbh = mysql_connect($dbhost, $dbuser, $dbpassword, true))
 		{
+			if($this->use_exceptions)
+				throw new ezSQL_Error(mysql_error(), mysql_errno());
+				
 			$this->register_error(mysql_error(), mysql_errno());
 			return false;
 		}
@@ -141,18 +131,27 @@ class ezSQL_mysql extends ezSQL_Base
 		// Must have a database name
 		if ($dbname == '')
 		{
+			if($this->use_exceptions)
+				throw new ezSQL_Error('No database specified!', -1);
+				
 			$this->register_error('No database name specified!');
 			return false;
 		}
 		// Must have an active database connection
 		if (!$this->dbh)
 		{
+			if($this->use_exceptions)
+				throw new ezSQL_Error('Invalid or inactive connection!');
+				
 			$this->register_error('Can\'t select database, invalid or inactive connection', -1);
 			return false;
 		}
 
 		if(!@mysql_select_db($dbname, $this->dbh))
 		{
+			if($this->use_exceptions)
+				throw new ezSQL_Error(mysql_error(), mysql_errno());
+			
 			$this->register_error(mysql_error($this->dbh), mysql_errno($this->dbh));
 			return false;
 		}
@@ -181,6 +180,7 @@ class ezSQL_mysql extends ezSQL_Base
 	{
 		return mysql_real_escape_string(stripslashes($str), $this->dbh);
 	}
+	
 	
 	/**
 	 * Returns the DB specific timestamp function (Oracle: SYSDATE, MySQL: NOW())
@@ -223,6 +223,9 @@ class ezSQL_mysql extends ezSQL_Base
 		// Make sure connection is ALIVEE!
 		if (!isset($this->dbh) || !$this->dbh )
 		{
+			if($this->use_exceptions)
+				throw new ezSQL_Error(mysql_error(), mysql_errno());
+			
 			$this->register_error('There is no active database connection!');
 			return false;
 		}
@@ -233,7 +236,10 @@ class ezSQL_mysql extends ezSQL_Base
 		// If there is an error then take note of it..
 		if(!$this->result && mysql_errno() != 0)
 		{
-			// Something went wrong				
+			// Something went wrong		
+			if($this->use_exceptions)		
+				throw new ezSQL_Error(mysql_error(), mysql_errno(), $query);
+				
 			$this->register_error(mysql_error(), $errno);
 			return false;
 		}
