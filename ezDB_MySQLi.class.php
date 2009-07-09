@@ -233,7 +233,7 @@ class ezDB_mysqli extends ezDB_Base
 		}
 		
 		// If there is no existing database connection then try to connect
-		if ( ! isset($this->dbh) || ! $this->dbh )
+		if ( ! $this->dbh )
 		{
 			if($this->use_exceptions)
 				throw new ezDB_Error($this->dbh->error, $this->dbh->errno);

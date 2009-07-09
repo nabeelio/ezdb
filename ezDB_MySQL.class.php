@@ -105,7 +105,9 @@ class ezDB_mysql extends ezDB_Base
 	 */
 	public function connect($dbuser='', $dbpassword='', $dbhost='localhost')
 	{
-		if(!$this->dbh = mysql_connect($dbhost, $dbuser, $dbpassword, true))
+		$this->dbh = mysql_connect($dbhost, $dbuser, $dbpassword, true);
+	
+		if(!$this->dbh)
 		{
 			if($this->use_exceptions)
 				throw new ezDB_Error(mysql_error(), mysql_errno());
@@ -113,7 +115,6 @@ class ezDB_mysql extends ezDB_Base
 			$this->register_error(mysql_error(), mysql_errno());
 			return false;
 		}
-		
 	
 		$this->clear_errors();
 		return true;
@@ -147,7 +148,7 @@ class ezDB_mysql extends ezDB_Base
 			return false;
 		}
 
-		if(!@mysql_select_db($dbname, $this->dbh))
+		if(!mysql_select_db($dbname, $this->dbh))
 		{
 			if($this->use_exceptions)
 				throw new ezDB_Error(mysql_error(), mysql_errno());
@@ -221,7 +222,7 @@ class ezDB_mysql extends ezDB_Base
 		}
 
 		// Make sure connection is ALIVEE!
-		if (!isset($this->dbh) || !$this->dbh )
+		if (!$this->dbh )
 		{
 			if($this->use_exceptions)
 				throw new ezDB_Error(mysql_error(), mysql_errno());
@@ -231,10 +232,10 @@ class ezDB_mysql extends ezDB_Base
 		}
 
 		// Perform the query via std mysql_query function..
-		$this->result = @mysql_query($query);
+		$this->result = mysql_query($query, $this->dbh);
 
 		// If there is an error then take note of it..
-		if(!$this->result && mysql_errno() != 0)
+		if(!$this->result && mysql_errno($this->dbh) != 0)
 		{
 			// Something went wrong		
 			if($this->use_exceptions)		
@@ -252,12 +253,12 @@ class ezDB_mysql extends ezDB_Base
 		$is_insert = false;
 		if(preg_match("/^(insert|delete|update|replace)\s+/i",$query))
 		{
-			$this->rows_affected = @mysql_affected_rows();
+			$this->rows_affected = mysql_affected_rows($this->dbh);
 			$this->num_rows = $this->rows_affected;
 						
 			if(mysql_insert_id() > 0)
 			{
-				$this->insert_id = @mysql_insert_id();
+				$this->insert_id = mysql_insert_id($this->dbh);
 				$is_insert = true;
 			}
 			
@@ -270,23 +271,23 @@ class ezDB_mysql extends ezDB_Base
 			// Take note of column info
 			$i=0;
 			
-			while ($i < @mysql_num_fields($this->result))
+			while ($i < mysql_num_fields($this->result))
 			{
-				$this->col_info[$i] = @mysql_fetch_field($this->result);
+				$this->col_info[$i] = mysql_fetch_field($this->result);
 				$i++;
 			}
 			
 			// Store Query Results
 			$num_rows=0;
 			
-			while($row = @mysql_fetch_object($this->result))
+			while($row = mysql_fetch_object($this->result))
 			{
 				// Store relults as an objects within main array
 				$this->last_result[$num_rows] = $row;
 				$num_rows++;
 			}
 
-			@mysql_free_result($this->result);
+			mysql_free_result($this->result);
 			
 			// Log number of rows the query returned
 			$this->rows_affected = $num_rows;

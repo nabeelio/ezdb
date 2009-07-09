@@ -51,6 +51,11 @@
 *  ezDB Constants
 */
 
+define('EZSQL_VERSION','2.03');
+define('OBJECT','OBJECT', true);
+define('ARRAY_A','ARRAY_A', true);
+define('ARRAY_N','ARRAY_N', true);
+
 /**
  *  Simple exception container class
  *
@@ -130,6 +135,7 @@ class ezDB_Base
 	public $cache_inserts   = false;
 	public $use_disk_cache  = false;
 	
+	protected $last_result;	
 	
 	public function __construct()
 	{
@@ -648,7 +654,8 @@ class ezDB_Base
 	 */
 	public function get_results($query=null, $output = '')
 	{
-		if($output == '') $output = $this->default_type;		
+		if($output == '') $output = $this->default_type;
+		
 		// Log how the function was called
 		$this->func_call = "\$db->get_results(\"$query\", $output)";
 		
@@ -657,7 +664,7 @@ class ezDB_Base
 		{
 			$this->query($query);
 		}
-		
+				
 		// Send back array of objects. Each row is an object
 		if ( $output == OBJECT )
 		{
@@ -731,7 +738,7 @@ class ezDB_Base
 	 */
 	public function store_cache($query,$is_insert)
 	{
-		if(!$this->cache_queries || $is_insert)
+		if($this->cache_queries === false || $is_insert)
 			return false;
 			
 		$result_cache = array('col_info' => $this->col_info,
@@ -773,8 +780,9 @@ class ezDB_Base
 	 */
 	public function get_cache($query)
 	{
+		if($this->cache_queries === false || $is_insert)
+			return false;
 		
-		echo $this->cache_type;
 		# Check if we want to us memcache, and whether it's available
 		if($this->cache_type == 'memcache')
 		{
