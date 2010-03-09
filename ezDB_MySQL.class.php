@@ -105,7 +105,7 @@ class ezDB_mysql extends ezDB_Base
 	 */
 	public function connect($dbuser='', $dbpassword='', $dbhost='localhost')
 	{
-		$this->dbh = mysql_connect($dbhost, $dbuser, $dbpassword, true);
+		$this->dbh = @mysql_connect($dbhost, $dbuser, $dbpassword, true);
 	
 		if(!$this->dbh)
 		{
@@ -214,6 +214,9 @@ class ezDB_mysql extends ezDB_Base
 
 		// Count how many queries there have been
 		$this->num_queries++;
+		
+		// Reset ourselves
+		$this->clear_errors();
 
 		// Use core file cache function
 		if($cache = $this->get_cache($query))
@@ -241,7 +244,7 @@ class ezDB_mysql extends ezDB_Base
 			if($this->use_exceptions)		
 				throw new ezDB_Error(mysql_error(), mysql_errno(), $query);
 				
-			$this->register_error(mysql_error(), $errno);
+			$this->register_error(mysql_error(), mysql_errno());
 			return false;
 		}
 		else
@@ -272,7 +275,7 @@ class ezDB_mysql extends ezDB_Base
 			// Take note of column info
 			$i=0;
 			
-			if($this->result)
+			if(is_resource($this->result))
 			{
 				while ($i < mysql_num_fields($this->result))
 				{

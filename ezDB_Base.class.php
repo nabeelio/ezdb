@@ -51,7 +51,7 @@
 *  ezDB Constants
 */
 
-define('EZSQL_VERSION','2.03');
+define('ezDB_VERSION','3.00');
 define('OBJECT','OBJECT', true);
 define('ARRAY_A','ARRAY_A', true);
 define('ARRAY_N','ARRAY_N', true);
@@ -159,6 +159,12 @@ class ezDB_Base
 	
 	public function __get($name)
 	{
+		if(!isset($this->settings[$name]))
+		{
+			$this->settings[$name] = null;
+			return null;
+		}
+		
 		return $this->settings[$name];
 	}
 	
@@ -480,36 +486,60 @@ class ezDB_Base
 	/**
 	 * Build a SELECT query, specifying the table, fields and extra conditions
 	 *
-	 * @param string $table Table to SELECT from
-	 * @param mixed $fields Array of fields to SELECT for, or comma delimited string of fields
-	 * @param string $cond Extra conditions (include the WHERE, LIMIT, etc)
-	 * @param int $limit Number of results to limit
-	 * @param type $type OBJECT, ARRAY_A, ARRAY_n
+	 * @param array $data
+	 * 
+	 * $data = array(
+	 *		'table' => 'Tablename',
+	 *		'fields' => array(fields),
+	 *		'where' => array(fields),
+	 *		'order' => 'field ASC',
+	 *		'group' => 'field',
+	 * );
+	 * 
 	 * @return type Array of results
 	 *
 	 */
-	public function quick_select($table, $fields, $cond='', $type='')
+	public function quick_select($params)
 	{
-		if($table ==  '') return false;
-		if($type == '') $type = $this->default_type;
-			
+		if(!is_array($params)) return;
+		if($params['table'] == '') return false;
+					
 		$sql = 'SELECT ';
 		
-		if(is_array($fields))
+		if(is_array($params['fields']))
 		{
-			$sql.= implode(',', $fields);
+			$sql .= implode(',', $params['fields']);
 		}
 		else
 		{
-			$sql .= $fields;
+			$sql .= $params['fields'];
 		}
 		
-		$sql .= ' FROM '.$table;
+		$sql .= ' FROM '.$params['table'];
 		
-		if($cond != '')
-			$sql .= ' '.$cond;
+		if(!empty($params['where']))
+		{
+			if(is_array($params['where']))
+			{
+				$sql .= $this->build_where($params['where']);
+			}
+			else
+			{
+				$sql .= $params['where'];
+			}
+		}
+			
+		if(!empty($params['group']))
+		{
+			$sql .= ' GROUP BY '.$params['group'];
+		}
 		
-		return $this->get_results($sql, $type);
+		if(!empty($params['order']))
+		{
+			$sql .= ' ORDER BY '.$params['order'];
+		}
+		
+		return $this->get_results($sql, $this->default_type);
 	}
 	
 	
@@ -615,6 +645,71 @@ class ezDB_Base
 			$sql .= ' WHERE '.$cond;
 		
 		return $this->query($sql);
+	}
+	
+	public function build_where($fields)
+	{
+		$sql='';
+		
+		if(!is_array($fields) || empty($fields))
+		{
+			return false;
+		}
+		
+		$sql .= ' WHERE ';
+		
+		$where_clauses = array();
+		foreach($fields as $column_name => $value)
+		{
+			# Convert to $columnname IN ($value)
+			if(is_array($value))
+			{
+				$sql_temp = "{$column_name} IN (";
+				
+				$value_list = array();
+				foreach($value as $in)
+				{
+					$in = DB::escape($in);
+					$value_list[] = "'{$in}'";
+				}
+				
+				$sql_temp .= implode(',', $value_list).")";
+				$where_clauses[] = $sql_temp;
+			}
+			else
+			{
+				# If there's no value per-say, just a field value
+				if(is_int($column_name))
+				{
+					$where_clauses[] = $value;
+					continue;
+				}
+				
+				# If there's a % (wildcard) in there, so it should use a LIKE
+				if(substr_count($value, '%') > 0)
+				{
+					$value = DB::escape($value);
+					$where_clauses[] = "{$column_name} LIKE '{$value}'";
+					continue;
+				}
+				
+				# If it's a greater than or equal to, or for some reason an equals
+				if($value[0] == '<' || $value[0] == '>' || $value[0] == '=')
+				{
+					$where_clauses[] = "{$column_name} {$value}";
+					continue;
+				}
+				
+				$value = DB::escape($value);
+				$where_clauses[] = "{$column_name} = '{$value}'";
+			}
+		}
+			
+		$sql.= implode(' AND ', $where_clauses).' ';
+		unset($where_clauses);
+		
+		return $sql;
+		
 	}
 		
 	/**
@@ -1001,5 +1096,3 @@ class ezDB_Base
 	}
 	
 }
-
-?>
