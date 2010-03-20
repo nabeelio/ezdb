@@ -348,8 +348,6 @@ class ezDB_mysqli extends ezDB_Base
 
 		$stmt->execute();
 
-	
+		
 	}*/
 }
-
-?>

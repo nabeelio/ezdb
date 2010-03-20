@@ -36,9 +36,14 @@
  * @license BSD License
  * @package codon_core
  */
+ 
+function ezdb_autoloader($class_name)
+{
+	$class_name = strtolower($class_name);
+	include dirname(__FILE__).DIRECTORY_SEPARATOR.$class_name.'.class.php';
+}
 
-include dirname(__FILE__).'/ezDB_Base.class.php';
-
+spl_autoload_register('ezdb_autoloader');
 
 /**
  * This is the < PHP 5.3 version
@@ -57,8 +62,16 @@ class DB
 	
 	public static $throw_exceptions = true;
 	public static $default_type = OBJECT;
+	public static $show_errors = false;
+	public static $log_errors = false;
+	public static $error_handler = null;
 	
 	public static $table_prefix = '';
+
+	protected static $dbuser;
+	protected static $dbpass;
+	protected static $dbname;
+	protected static $dbserver;
 	
 	/**
 	 * Private contructor, don't allow for
@@ -73,25 +86,6 @@ class DB
 	{
 		@self::$DB->close();
 	}
-	
-	/* So it passes through to the main class */
-	/*public function __get($name)
-	{
-		return self::$DB->{$name};
-	}
-	
-	public function __set($name, $value)
-	{
-		self::$DB->{$name} = $value;
-	}
-	
-	public static function __call($name, $arguments)
-	{
-		if(method_exists(self::$DB, $name))
-		{
-			return call_user_func_array(array(self::$DB, $name), $arguments);
-		}
-	}*/
 	
 	/**
 	 * Return the singleton instance of the DB class
@@ -111,56 +105,40 @@ class DB
 	 */
 	public static function init($type='mysql')
 	{		
-		if($type == 'mysql' || $type == '')
+		$class_name = 'ezdb_'.$type;
+		if(!self::$DB = new $class_name())
 		{
-			include dirname(__FILE__).DIRECTORY_SEPARATOR.'ezDB_MySQL.class.php';
+			self::$error = self::$DB->error;
+			self::$errno = self::$DB->errno;
 			
-			if(!self::$DB = new ezDB_mysql())
-			{
-				self::$error = self::$DB->error;
-				self::$errno = self::$DB->errno;
-			
-				return false;
-			}
-			
-			return true;
-		}
-		elseif($type == 'mysqli')
-		{
-			include dirname(__FILE__).DIRECTORY_SEPARATOR.'ezDB_MySQLi.class.php';
-			
-			if(!self::$DB = new ezDB_mysqli())
-			{
-				self::$error = self::$DB->error;
-				self::$errno = self::$DB->errno;
-				return false;
-			}
-			
-			return true;
-		}
-		elseif($type == 'oracle')
-		{
-			include dirname(__FILE__).DIRECTORY_SEPARATOR.'ezDB_Oracle.class.php';
-			
-			if(!self::$DB = new ezDB_oracle8_9())
-			{
-				self::$error = self::$DB->error;
-				self::$errno = self::$DB->errno;
-				return false;
-			}
-			
-			return true;
-		}
-		else
-		{
-			include dirname(__FILE__).DIRECTORY_SEPARATOR.'ezDB_MySQL.class.php';
-			
-			self::$DB = new ezDB_mysql();
-			self::$error = 'Invalid database type';
-			return true;
+			return false;
 		}
 		
 		return true;
+	}
+	
+	public static function set_log_errors($bool)
+	{
+		self::$log_errors = $bool;
+	}
+	
+	public static function set_use_exceptions($bool)
+	{
+		self::$throw_exceptions = $bool;
+	}
+		
+	/**
+	 * Set a function/class as an error handler. Function is the 
+	 * same parameter sent to 
+	 * 
+	 * http://us.php.net/manual/en/function.call-user-func-array.php
+	 * 
+	 * @param $handler method name or class to call on an error
+	 * 
+	 */
+	public static function set_error_handler($function)
+	{
+		self::$error_handler = $function;		
 	}
 		
 	/**
@@ -245,6 +223,11 @@ class DB
 			return false;
 		}
 		
+		self::$dbuser = $user;
+		self::$dbpass = $pass;
+		self::$dbname = $name;
+		self::$dbserver = $server;
+		
 		self::$DB->throw_exceptions = self::$throw_exceptions;
 		self::$connected = true;
 		return true;
@@ -302,11 +285,11 @@ class DB
 	 * @param constant $type
 	 * @return resultset
 	 */
-	public static function quick_select($table, $fields, $cond='', $type=OBJECT)
+	public static function quick_select($params)
 	{
 		self::$DB->throw_exceptions = self::$throw_exceptions;
 		
-		return self::$DB->quick_select($table, $fields, $cond, $type);
+		return self::$DB->quick_select($params);
 	}
 	
 	/**
@@ -340,6 +323,104 @@ class DB
 		return self::$DB->quick_update($table, $fields, $cond, $allowed_cols);
 	}
 	
+	
+	/**
+	 * Build a WHERE clause for an SQL statement with supplied parameters
+	 *
+	 * @param array $fields associative array with column=>value
+	 * @return string string where
+	 *
+	 */
+	public static function build_where($fields)
+	{
+		return self::$DB->build_where($fields);
+	}
+	
+	
+	/**
+	 * Build the update clause (after the SET and before WHERE)
+	 *
+	 * @param array $fields associative array (col_name=>value)
+	 * @return string the SQL string
+	 *
+	 */
+	public static function build_update($fields)
+	{
+		if(!is_array($fields) || empty($fields))
+		{
+			return false;
+		}
+		
+		$sql = '';
+		$sql_cols = array();
+		
+		foreach($fields as $col => $value)
+		{
+			
+			/* If there's a value just added */
+			if(is_int($col))
+			{
+				$sql_cols[] = $value;
+				continue;
+			}
+			
+			$tmp = "`{$col}`=";
+			
+			if(is_int($value))
+			{
+				$tmp .= $value;
+			}
+			else
+			{
+				if($value === "NOW()")
+				{
+					$tmp.='NOW()';
+				}
+				else
+				{
+					$value = DB::escape($value);
+					$tmp.="'{$value}'";
+				}
+			}
+			
+			$sql_cols[] = $tmp;
+		}
+		
+		$sql .= implode(', ', $sql_cols);
+		unset($sql_cols);
+		
+		return $sql;
+	}
+	
+	/**
+	 * Write out the last query to a debug log, or error
+	 *
+	 * @return mixed This is the return value description
+	 *
+	 */
+	public static function write_debug()
+	{
+		if(self::$error_handler === null || self::$log_errors == false)
+		{
+			return;
+		}
+		
+		$backtrace = debug_backtrace();
+			
+		$debug_info = array(
+			'backtrace' => $backtrace,
+			'sql' => self::$last_query,
+			'error' => self::$error,
+			'errno' => self::$errno,
+			'dbuser' => self::$dbuser,
+			'dbname' => self::$dbname,
+			'dbpass' => self::$dbpass,
+			'dbserver' => self::$dbserver,
+		);
+			
+		call_user_func_array(self::$error_handler, array($debug_info));
+	}
+	
 	/**
 	 * Return array of results. Default returns array of
 	 * objects. Can be ARRAY_A, ARRAY_N or OBJECT, for
@@ -362,6 +443,12 @@ class DB
 		self::$errno = self::$DB->errno;
 		self::$num_rows = self::$DB->num_rows;
 		self::$last_query = $query;
+		
+		// Log any erronious queries
+		if(self::$DB->errno != 0)
+		{
+			self::write_debug();
+		}
 		
 		return $ret;
 	}
@@ -386,6 +473,12 @@ class DB
 		self::$errno = self::$DB->errno;
 		self::$last_query = $query;
 		
+		// Log any erronious queries
+		if(self::$DB->errno != 0)
+		{
+			self::write_debug();
+		}
+		
 		return $ret;
 	}
 	
@@ -406,6 +499,12 @@ class DB
 		self::$rows_affected = self::$num_rows = self::$DB->num_rows;
 		self::$insert_id = self::$DB->insert_id;
 		self::$last_query = $query;
+		
+		// Log any erronious queries
+		if(self::$DB->errno != 0)
+		{
+			self::write_debug();
+		}
 		
 		return $ret; //self::$insert_id;
 	}
@@ -515,6 +614,7 @@ class DB
 	
 	public static function debug($return = false)
 	{
-		return self::$DB->debug($return);
+		if(self::$show_errors === true)
+			return self::$DB->debug($return);
 	}
 }
