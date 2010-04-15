@@ -526,6 +526,11 @@ class ezDB_Base
 			$sql .= ' ORDER BY '.$params['order'];
 		}
 		
+		if(!empty($params['limit']))
+		{
+			$sql .= ' LIMIT '.$params['limit'];
+		}
+		
 		return $this->get_results($sql, $this->default_type);
 	}
 	
@@ -697,6 +702,53 @@ class ezDB_Base
 		
 		return $sql;
 		
+	}
+	
+	public function build_update($fields)
+	{
+		if(!is_array($fields) || empty($fields))
+		{
+			return false;
+		}
+		
+		$sql = '';
+		$sql_cols = array();
+		
+		foreach($fields as $col => $value)
+		{
+			/* If there's a value just added */
+			if(is_int($col))
+			{
+				$sql_cols[] = $value;
+				continue;
+			}
+			
+			$tmp = "`{$col}`=";
+			
+			if(is_int($value))
+			{
+				$tmp .= $value;
+			}
+			else
+			{
+				if($value === "NOW()")
+				{
+					$tmp.='NOW()';
+				}
+				else
+				{
+					$value = DB::escape($value);
+					$tmp.="'{$value}'";
+				}
+			}
+			
+			$sql_cols[] = $tmp;
+		}
+		
+		$sql .= implode(', ', $sql_cols);
+		unset($sql_cols);
+		
+		return $sql;
 	}
 		
 	/**
