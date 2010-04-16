@@ -269,7 +269,7 @@ class ezDB_mysqli extends ezDB_Base
 		{
 			// Take note of column info
 			$num_rows = 0;
-			if(is_resource($result))
+			if($result instanceof MySQLi_Result)
 			{	
 				$this->col_info = $result->fetch_fields();
 						
