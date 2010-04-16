@@ -268,18 +268,12 @@ class ezDB_mysqli extends ezDB_Base
 		else
 		{
 			// Take note of column info
-			$i=0;
-			
-			if($result)
-			{
-				while ($finfo = $result->fetch_field())
-				{
-					$this->col_info[$i] = $finfo;
-					$i++;
-				}
-		
+			$num_rows = 0;
+			if(is_resource($result))
+			{	
+				$this->col_info = $result->fetch_fields();
+						
 				// Store Query Results
-				$num_rows=0;
 				while($row = $result->fetch_object())
 				{
 					$this->last_result[$num_rows] = $row;
