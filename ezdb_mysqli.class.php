@@ -261,7 +261,7 @@ class ezDB_mysqli extends ezDB_Base
 				$is_insert = true;
 			}
 			
-			// Return number fo rows affected
+			// Return number of rows affected
 			$return_val = $this->rows_affected;
 		}
 		// Query was a select
