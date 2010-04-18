@@ -673,6 +673,11 @@ class ezDB_Base
 			return ' WHERE '.$fields;
 		}
 		
+		if(count($fields) === 0)
+		{
+			return '';
+		}
+
 		$sql .= ' WHERE ';
 		
 		$where_clauses = array();
