@@ -665,20 +665,19 @@ class ezDB_Base
 	
 	public function build_where($fields)
 	{
-		$sql='';
-		
+		if(count($fields) === 0 || empty($fields) === true)
+		{
+			return '';
+		}
+
+		// It's a string
 		if(!is_array($fields))
 		{
 			$fields = str_ireplace('WHERE', '', $fields);
 			return ' WHERE '.$fields;
 		}
-		
-		if(count($fields) === 0)
-		{
-			return '';
-		}
 
-		$sql .= ' WHERE ';
+		$sql = ' WHERE ';
 		
 		$where_clauses = array();
 		foreach($fields as $column_name => $value)
@@ -730,8 +729,7 @@ class ezDB_Base
 		$sql.= implode(' AND ', $where_clauses).' ';
 		unset($where_clauses);
 		
-		return $sql;
-		
+		return $sql;		
 	}
 	
 	public function build_update($fields)
