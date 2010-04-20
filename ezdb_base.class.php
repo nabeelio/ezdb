@@ -635,14 +635,7 @@ class ezDB_Base
 		
 		if(!empty($params['where']))
 		{
-			if(is_array($params['where']))
-			{
-				$sql .= $this->build_where($params['where']);
-			}
-			else
-			{
-				$sql .= $params['where'];
-			}
+			$sql .= $this->build_where($params['where']);
 		}
 			
 		if(!empty($params['group']))
@@ -671,10 +664,16 @@ class ezDB_Base
 		}
 
 		// It's a string
-		if(!is_array($fields))
+		if(!is_array($fields) && !is_object($fields))
 		{
 			$fields = str_ireplace('WHERE', '', $fields);
 			return ' WHERE '.$fields;
+		}
+		
+		// Cast it to an array...
+		if(is_object($fields))
+		{
+			$fields = (array) $fields;
 		}
 
 		$sql = ' WHERE ';
