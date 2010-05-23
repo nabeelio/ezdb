@@ -521,31 +521,40 @@ class ezDB_Base
 		
 		$sql = 'INSERT '. $flags .' INTO '.$table.' ';
 		
+		$cols = array();
+		$col_values = array();
+
 		if(is_array($allowed_cols) && count($allowed_cols) > 0)
 		{
 			foreach($allowed_cols as $column)
 			{
-				$cols .= $column.',';
-				$col_values .= $this->escape($fields[$column]).',';
+				$cols[] = "`{$column}`";
+				$col_values[] = "'".$this->escape($fields[$column])."'";
+
+				//$cols .= $column.',';
+				//$col_values .= $this->escape($fields[$column]).',';
 			}
 		}
 		else
 		{
 			if(is_array($fields))
 			{
-				foreach($fields as $key=>$value)
+				foreach($fields as $key => $value)
 				{
 					// build both strings
-					$cols .= $key.',';
-					$col_values .= $this->escape($value).',';
+					$cols[] = "`{$key}`";
+
+					//$cols .= '`'.$key.'`, ';
+
+					if($value == 'NOW()')
+						$col_values[] = 'NOW()';
+					else
+						$col_values[] = "'".$this->escape($value)."'";
 				}
 			}
 		}
-		
-		$cols[strlen($cols)-1] = ' ';
-		$col_values[strlen($col_values)-1] = ' ';
-		
-		$sql .= '('.$cols.') VALUES ('.$col_values.')';
+				
+		$sql .= '('.implode(', ', $cols).') VALUES ('.implode(', ', $col_values).')';
 			
 		return $this->query($sql);
 	}
