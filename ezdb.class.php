@@ -459,6 +459,14 @@ class DB
 		
 		return $ret; //self::$insert_id;
 	}
+
+	/** 
+	 * Return all of the columns
+	 */
+	public static function get_cols()
+	{
+		return self::$DB->get_cols();
+	}
 	
 	/**
 	 * Get information about a column

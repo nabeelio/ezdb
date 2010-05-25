@@ -865,6 +865,18 @@ class ezDB_Base
 			}
 		}
 	}
+
+	/**
+	 * Return all of the columns
+	 * 
+	 * @return array Column information
+	 */
+	public function get_cols()
+	{
+		
+		return $this->col_info;
+
+	}
 		
 	/**
 	 * Get metadata regarding a column, about a column in the last query
