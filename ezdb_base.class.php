@@ -24,6 +24,9 @@
  * @copyright Copyright (c) 2008-2010, Nabeel Shahzad
  * @link http://github.com/nshahzad/ezdb
  * @license MIT License
+ * 
+ * 
+ * Based on ezSQL by Justin Vincent: http://justinvincent.com/docs/ezsql/ez_sql_help.htm
  */
 
 /**********************************************************************
@@ -97,10 +100,10 @@ class ezDB_Base
 	
 	public $table_prefix = '';
 	
-	public $dbuser = false;
-	public $dbpassword = false;
-	public $dbname = false;
-	public $dbhost = false;
+	protected $dbuser = false;
+	protected $dbpassword = false;
+	protected $dbname = false;
+	protected $dbhost = false;
 	public $result;
 	
 	public $default_type = OBJECT;
