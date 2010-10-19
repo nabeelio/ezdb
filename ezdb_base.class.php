@@ -374,6 +374,12 @@ class ezDB_Base
 		
 		return true;
 	}
+
+
+	public function num_queries()
+	{
+		return $this->num_queries;
+	}
 			
 	/**
 	 * Get a single column/variable
@@ -933,7 +939,7 @@ class ezDB_Base
 		
 		if($this->cache_type == 'memcache')
 		{
-			
+			// @TODO: memcache 
 		}
 		elseif($this->cache_type == 'apc')
 		{
@@ -978,7 +984,7 @@ class ezDB_Base
 		# Check if we want to us memcache, and whether it's available
 		if($this->cache_type == 'memcache')
 		{
-			
+			// @TODO: memcache 
 		}
 		elseif($this->cache_type == 'apc')
 		{

@@ -222,6 +222,14 @@ class DB
 		self::$connected = true;
 		return true;
 	}
+
+	public static function num_queries()
+	{
+		
+		return self::$DB->num_queries();
+
+	}
+
 	
 	/**
 	 * Select/Change the active database. It's called from
