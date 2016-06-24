@@ -188,6 +188,7 @@ class DB
 	 * @param string $pass
 	 * @param string $name
 	 * @param string $server
+	 * @param string $char_set
 	 * @return boolean
 	 */
 	public static function connect($user='', $pass='', $name='', $server='', $char_set='utf8')
