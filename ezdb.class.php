@@ -224,6 +224,17 @@ class DB
 	}
 
 	/**
+	 * Returns the number of queries being executed.
+	 *
+	 * @access	public
+	 * @return	int
+	 */
+	public static function num_queries()
+	{
+		return self::$DB->num_queries();
+	}
+
+	/**
 	 * Select/Change the active database. It's called from
 	 * connect(), but can also be changed
 	 *

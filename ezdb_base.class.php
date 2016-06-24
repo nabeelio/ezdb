@@ -369,6 +369,17 @@ class ezDB_Base
 	}
 
 	/**
+	 * Returns the number of queries being executed.
+	 *
+	 * @access	public
+	 * @return	int
+	 */
+	public function num_queries()
+	{
+		return $this->num_queries;
+	}
+
+	/**
 	 * Get a single column/variable
 	 *
 	 * @param string $query SQL query
