@@ -1,14 +1,14 @@
 <?php
 /**
  * Copyright (c) 2010 Nabeel Shahzad
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
 
@@ -24,7 +24,7 @@
  * @copyright Copyright (c) 2008-2010, Nabeel Shahzad
  * @link http://github.com/nshahzad/ezdb
  * @license MIT License
- * 
+ *
  * Based on ezSQL by Justin Vincent: http://justinvincent.com/docs/ezsql/ez_sql_help.htm
  */
 
@@ -42,34 +42,34 @@ class DB
 	public static $rows_affected;
 	public static $connected = false;
 	public static $last_query;
-	
+
 	public static $throw_exceptions = true;
 	public static $default_type = OBJECT;
 	public static $show_errors = false;
 	public static $log_errors = false;
 	public static $error_handler = null;
-	
+
 	public static $table_prefix = '';
 
 	protected static $dbuser;
 	protected static $dbpass;
 	protected static $dbname;
 	protected static $dbserver;
-	
+
 	/**
 	 * Private contructor, don't allow for
 	 * initialization of this class
 	 */
-	private function __contruct()
+	private function __construct()
 	{
 		return;
 	}
-	
+
 	public function __destruct()
 	{
 		@self::$DB->close();
 	}
-	
+
 	/**
 	 * Return the singleton instance of the DB class
 	 *
@@ -79,56 +79,56 @@ class DB
 	{
 		return self::$DB;
 	}
-		
+
 	/**
 	 * Initialize the database connection
 	 *
 	 * @param string $type Either mysql, mysqli, oracle. Default is mysql
 	 * @return boolean
 	 */
-	public static function init($type='mysql')
+	public static function init($type='mysqli')
 	{
 		$class_name = strtolower('ezdb_'.$type);
 		include dirname(__FILE__).DIRECTORY_SEPARATOR.$class_name.'.class.php';
-		
+
 		if(!self::$DB = new $class_name())
 		{
 			self::$error = self::$DB->error;
 			self::$errno = self::$DB->errno;
-			
+
 			return false;
 		}
-		
+
 		return true;
 	}
-	
+
 	public static function set_log_errors($bool)
 	{
 		self::$log_errors = $bool;
 	}
-	
+
 	public static function set_throw_exceptions($bool)
 	{
 		self::$throw_exceptions = $bool;
 	}
-		
+
 	/**
-	 * Set a function/class as an error handler. Function is the 
-	 * same parameter sent to 
-	 * 
+	 * Set a function/class as an error handler. Function is the
+	 * same parameter sent to
+	 *
 	 * http://us.php.net/manual/en/function.call-user-func-array.php
-	 * 
+	 *
 	 * @param $handler method name or class to call on an error
-	 * 
+	 *
 	 */
 	public static function set_error_handler($function)
 	{
-		self::$error_handler = $function;		
+		self::$error_handler = $function;
 	}
-		
+
 	/**
 	 * Enable or disable caching, can be set per-query
-	 * 
+	 *
 	 * @param bool $bool True/False
 	 * @return none
 	 */
@@ -136,51 +136,51 @@ class DB
 	{
 		self::$DB->set_caching($bool);
 	}
-	
+
 	/**
 	 * Set the cache type (file, memcache)
 	 *
 	 * @param string $type Caching type
-	 * @return none 
+	 * @return none
 	 *
 	 */
 	public static function cache_type($type)
 	{
 		self::$DB->cache_type($type);
 	}
-	
+
 	/**
 	 * Set the path of the cache
 	 *
 	 * @param mixed $path This is a description
 	 * @return mixed This is the return value description
 	 *
-	 */	
+	 */
 	public static function set_cache_dir($path)
 	{
 		self::$DB->set_cache_dir($path);
 	}
-	
-		
+
+
 	/* Aliases for above, backwards compat */
-	
+
 	public static function setCacheDir($path)
 	{
 		self::set_cache_dir($path);
 	}
-	
+
 	public static function enableCache()
 	{
 		self::$DB->set_caching(true);
 	}
-	
+
 	public static function disableCache()
 	{
 		self::$DB->set_caching(false);
 	}
-	
+
 	/* End aliases */
-	
+
 	/**
 	 * Connect to database
 	 *
@@ -190,47 +190,39 @@ class DB
 	 * @param string $server
 	 * @return boolean
 	 */
-	public static function connect($user='', $pass='', $name='', $server='')
+	public static function connect($user='', $pass='', $name='', $server='', $char_set='utf8')
 	{
-		if(!self::$DB->connect($user, $pass, $server))
+		if(!self::$DB->connect($user, $pass, $server, $char_set))
 		{
 			self::$error = self::$DB->error;
 			self::$errno = self::$DB->errno;
-			
+
 			return false;
 		}
-		
+
 		if(!self::$DB->select($name))
 		{
 			self::$error = self::$DB->error;
 			self::$errno = self::$DB->errno;
-			
+
 			return false;
 		}
-		
+
 		self::$dbuser = $user;
 		self::$dbpass = $pass;
 		self::$dbname = $name;
 		self::$dbserver = $server;
-		
+
 		self::$DB->dbuser = $user;
 		self::$DB->dbpassword = $pass;
 		self::$DB->dbname = $name;
 		self::$DB->dbhost = $server;
-		
+
 		self::$DB->throw_exceptions = self::$throw_exceptions;
 		self::$connected = true;
 		return true;
 	}
 
-	public static function num_queries()
-	{
-		
-		return self::$DB->num_queries();
-
-	}
-
-	
 	/**
 	 * Select/Change the active database. It's called from
 	 * connect(), but can also be changed
@@ -241,17 +233,17 @@ class DB
 	public static function select($dbname)
 	{
 		self::$DB->throw_exceptions = self::$throw_exceptions;
-		
+
 		$ret = self::$DB->select($dbname);
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
-		
+
 		if(self::$errno == 0)
 			return true;
-		
+
 		return false;
 	}
-	
+
 	/**
 	 * Close the database connector
 	 *
@@ -261,7 +253,7 @@ class DB
 	{
 		return @self::$DB->close();
 	}
-	
+
 	/**
 	 * Set a table prefix for the quick_ functions
 	 * If it's set to blank (default), then no prefix will be used
@@ -272,7 +264,7 @@ class DB
 	{
 		self::$table_prefix = '';
 	}
-	
+
 	/**
 	 * Do a "quick select".
 	 * @see http://www.nsslive.net/codon/docs/database#quick_functions
@@ -288,7 +280,7 @@ class DB
 		self::$DB->throw_exceptions = self::$throw_exceptions;
 		return self::$DB->quick_select($table, $fields, $cond);
 	}
-	
+
 	/**
 	 * Do a quick insert into a table
 	 * @see http://www.nsslive.net/codon/docs/database#quick_functions
@@ -303,7 +295,7 @@ class DB
 		self::$DB->throw_exceptions = self::$throw_exceptions;
 		return self::$DB->quick_insert($table, $fields, $flags, $allowed_cols);
 	}
-	
+
 	/**
 	 * Do a "quick update"
 	 * @see http://www.nsslive.net/codon/docs/database#quick_functions
@@ -318,7 +310,7 @@ class DB
 		self::$DB->throw_exceptions = self::$throw_exceptions;
 		return self::$DB->quick_update($table, $fields, $cond, $allowed_cols);
 	}
-	
+
 	/**
 	 * Build a SELECT statement
 	 *
@@ -327,7 +319,7 @@ class DB
 	{
 		return self::$DB->build_select($params);
 	}
-	
+
 	/**
 	 * Build a WHERE clause for an SQL statement with supplied parameters
 	 *
@@ -339,8 +331,8 @@ class DB
 	{
 		return self::$DB->build_where($fields);
 	}
-	
-	
+
+
 	/**
 	 * Build the update clause (after the SET and before WHERE)
 	 *
@@ -352,7 +344,7 @@ class DB
 	{
 		return self::$DB->build_update($fields);
 	}
-	
+
 	/**
 	 * Write out the last query to a debug log, or error
 	 *
@@ -365,9 +357,9 @@ class DB
 		{
 			return;
 		}
-		
+
 		$backtrace = debug_backtrace();
-			
+
 		$debug_info = array(
 			'backtrace' => $backtrace,
 			'sql' => self::$last_query,
@@ -378,10 +370,10 @@ class DB
 			'dbpass' => self::$dbpass,
 			'dbserver' => self::$dbserver,
 		);
-			
+
 		call_user_func_array(self::$error_handler, array($debug_info));
 	}
-	
+
 	/**
 	 * Return array of results. Default returns array of
 	 * objects. Can be ARRAY_A, ARRAY_N or OBJECT, for
@@ -395,25 +387,25 @@ class DB
 	public static function get_results($query, $type='')
 	{
 		if($type == '') $type = self::$default_type;
-		
+
 		self::$DB->throw_exceptions = self::$throw_exceptions;
-		
+
 		$ret = self::$DB->get_results($query, $type);
-		
+
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
 		self::$num_rows = self::$DB->num_rows;
 		self::$last_query = $query;
-		
+
 		// Log any erronious queries
 		if(self::$DB->errno != 0)
 		{
 			self::write_debug();
 		}
-		
+
 		return $ret;
 	}
-	
+
 	/**
 	 * Return a single row
 	 *
@@ -425,24 +417,24 @@ class DB
 	public static function get_row($query, $type='', $y=0)
 	{
 		if($type == '') $type = self::$default_type;
-		
+
 		self::$DB->throw_exceptions = self::$throw_exceptions;
-		
+
 		$ret = self::$DB->get_row($query, $type, $y);
-		
+
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
 		self::$last_query = $query;
-		
+
 		// Log any erronious queries
 		if(self::$DB->errno != 0)
 		{
 			self::write_debug();
 		}
-		
+
 		return $ret;
 	}
-	
+
 	/**
 	 * Perform a query
 	 *
@@ -452,32 +444,32 @@ class DB
 	public static function query($query)
 	{
 		self::$DB->throw_exceptions = self::$throw_exceptions;
-		
+
 		$ret = self::$DB->query($query);
-		
+
 		self::$error = self::$DB->error;
 		self::$errno = self::$DB->errno;
 		self::$rows_affected = self::$num_rows = self::$DB->num_rows;
 		self::$insert_id = self::$DB->insert_id;
 		self::$last_query = $query;
-		
+
 		// Log any erronious queries
 		if(self::$DB->errno != 0)
 		{
 			self::write_debug();
 		}
-		
+
 		return $ret; //self::$insert_id;
 	}
 
-	/** 
+	/**
 	 * Return all of the columns
 	 */
 	public static function get_cols()
 	{
 		return self::$DB->get_cols();
 	}
-	
+
 	/**
 	 * Get information about a column
 	 *
@@ -489,7 +481,7 @@ class DB
 	{
 		return self::$DB->get_col_info($info_type, $col_offset);
 	}
-	
+
 	/**
 	 * Return a single value from a query
 	 *
@@ -501,37 +493,47 @@ class DB
 	{
 		return self::$DB->get_col($query, $offset);
 	}
-		
+
+	/**
+	 * Return the ID generated in the last query.
+	 *
+	 * @return unknown
+	 */
+	public static function get_insert_id()
+	{
+		return self::$DB->get_insert_id();
+	}
+
 	public static function get_var($query=null, $x=0, $y=0)
 	{
 		return self::$DB->get_var($query, $x, $y);
 	}
-	
+
 	public static function num_rows()
 	{
 		return self::$num_rows;
 	}
-	
+
 	public static function vardump($mixed='')
 	{
 		return self::$DB->vardump($mixed);
 	}
-	
+
 	public static function dumpvar($mixed='')
 	{
 		return self::$DB->vardump($mixed);
 	}
-	
+
 	public static function get_cache($query)
 	{
 		return self::$DB->get_cache($query);
 	}
-	
+
 	public static function store_cache($query, $is_insert)
 	{
 		return self::$DB->store_cache($query, $is_insert);
 	}
-	
+
 	/**
 	 * Get the error string from the last query
 	 *
@@ -551,7 +553,7 @@ class DB
 	{
 		return self::$DB->errno();
 	}
-	
+
 	/**
 	 * Return array of all the errors
 	 *
@@ -561,7 +563,7 @@ class DB
 	{
 		return self::$DB->get_all_errors();
 	}
-	
+
 	public static function flush()
 	{
 		return self::$DB->flush();
@@ -570,17 +572,17 @@ class DB
 	{
 		return self::$DB->show_errors();
 	}
-	
+
 	public static function hide_errors()
 	{
 		return self::$DB->hide_errors();
 	}
-	
+
 	public static function escape($val)
 	{
 		return self::$DB->escape($val);
 	}
-	
+
 	public static function debug($return = false)
 	{
 		if(self::$show_errors === true)
