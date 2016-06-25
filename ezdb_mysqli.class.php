@@ -92,6 +92,7 @@ class ezDB_mysqli extends ezDB_Base
 	 * @param string $dbuser Username
 	 * @param string $dbpassword Password
 	 * @param string $dbhost Host, optional, default is localhost
+	 * @param string $char_set
 	 * @return bool Success
 	 *
 	 */

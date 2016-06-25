@@ -188,6 +188,7 @@ class DB
 	 * @param string $pass
 	 * @param string $name
 	 * @param string $server
+	 * @param string $char_set
 	 * @return boolean
 	 */
 	public static function connect($user='', $pass='', $name='', $server='', $char_set='utf8')
@@ -221,6 +222,17 @@ class DB
 		self::$DB->throw_exceptions = self::$throw_exceptions;
 		self::$connected = true;
 		return true;
+	}
+
+	/**
+	 * Returns the number of queries being executed.
+	 *
+	 * @access	public
+	 * @return	int
+	 */
+	public static function num_queries()
+	{
+		return self::$DB->num_queries();
 	}
 
 	/**
